@@ -15,7 +15,7 @@ YYDS_API_BASE = "https://maliapi.215.im/v1"
 config = {}
 _cf_domain_index = 0
 _cloudmail_domain_index = 0
-_OWN_NAMES = {'cloudmail_get_email_and_token', 'get_messages', 'cloudflare_get_messages', 'get_yyds_api_key', 'yyds_generate_username', 'yyds_get_domains', 'yyds_get_email_and_token', 'yyds_get_oai_code', 'get_email_provider', 'cloudflare_get_domains', 'extract_verification_code', 'get_cloudflare_api_base', 'cloudflare_apply_auth_params', 'duckmail_get_oai_code', 'create_account', 'get_yyds_jwt', 'get_message_detail', 'yyds_create_account', 'get_duckmail_api_key', 'get_cloudflare_path', 'cloudflare_create_account', 'cloudflare_get_token', 'cloudflare_get_oai_code', 'get_cloudmail_public_token', 'generate_username', 'yyds_get_message_detail', 'cloudflare_next_default_domain', 'yyds_get_messages', 'yyds_get_token', 'get_domains', 'get_token', 'cloudflare_create_temp_address', 'get_cloudflare_api_key', 'get_cloudmail_path', 'get_cloudmail_api_base', 'cloudmail_get_oai_code', 'cloudflare_build_headers', 'cloudflare_is_admin_create_path', 'cloudmail_next_domain', 'cloudflare_get_message_detail', 'cloudmail_get_messages', 'get_user_agent', 'yyds_pick_domain', '_pick_list_payload', 'get_email_and_token', 'get_oai_code', 'get_cloudflare_auth_mode', 'pick_domain'}
+_OWN_NAMES = {'cloudmail_get_email_and_token', 'get_messages', 'cloudflare_get_messages', 'get_yyds_api_key', 'yyds_generate_username', 'yyds_get_domains', 'yyds_get_email_and_token', 'yyds_get_oai_code', 'get_email_provider', 'cloudflare_get_domains', 'extract_verification_code', 'get_cloudflare_api_base', 'cloudflare_apply_auth_params', 'duckmail_get_oai_code', 'create_account', 'get_yyds_jwt', 'get_message_detail', 'yyds_create_account', 'get_duckmail_api_key', 'get_cloudflare_path', 'cloudflare_create_account', 'cloudflare_get_token', 'cloudflare_get_oai_code', 'get_cloudmail_public_token', 'generate_username', 'yyds_get_message_detail', 'cloudflare_next_default_domain', 'yyds_get_messages', 'yyds_get_token', 'get_domains', 'get_token', 'cloudflare_create_temp_address', 'get_cloudflare_api_key', 'get_cloudmail_path', 'get_cloudmail_api_base', 'cloudmail_get_oai_code', 'cloudflare_build_headers', 'cloudflare_is_admin_create_path', 'cloudmail_next_domain', 'cloudflare_get_message_detail', 'cloudmail_get_messages', 'get_user_agent', 'yyds_pick_domain', '_pick_list_payload', 'get_email_and_token', 'get_oai_code', 'get_cloudflare_auth_mode', 'pick_domain', 'tempik_get_email_and_token', 'tempik_get_oai_code'}
 
 
 def bind_runtime(namespace):
@@ -556,12 +556,88 @@ def get_domains(api_key=None):
 def get_duckmail_api_key():
     return config.get("duckmail_api_key", "")
 
+def tempik_get_email_and_token():
+    """Tempik (https://tempmail.hafizhmuzani.my.id) — buat inbox baru.
+    Return (address, session_id) — session_id dipakai sebagai token Bearer."""
+    api_base = str(config.get("tempik_api_base", "https://tempmail.hafizhmuzani.my.id") or "").strip().rstrip("/")
+    if not api_base:
+        raise Exception("Tempik API Base 未配置")
+    domain_raw = str(config.get("tempik_default_domain", "hafizhmuzani.my.id") or "").strip()
+    domain = domain_raw.lstrip("@")
+    if not domain:
+        raise Exception("Tempik default domain 未配置")
+    sess = http_post(f"{api_base}/api/session")
+    sess.raise_for_status()
+    session_id = (sess.json() or {}).get("sessionId", "")
+    if not session_id:
+        raise Exception(f"Tempik session 失败: {sess.text[:200]}")
+    inbox = http_post(
+        f"{api_base}/api/inboxes",
+        json={"domain": domain},
+        headers={"x-session-id": session_id},
+    )
+    inbox.raise_for_status()
+    address = (inbox.json() or {}).get("address", "")
+    if not address:
+        raise Exception(f"Tempik inboxes 失败: {inbox.text[:200]}")
+    print(f"[*] 已创建 Tempik 邮箱: {address}")
+    return address, session_id
+
+
+def tempik_get_oai_code(
+    dev_token,
+    email,
+    timeout=180,
+    poll_interval=3,
+    log_callback=None,
+    cancel_callback=None,
+):
+    """Polling inbox Tempik untuk verifikasi code (OAI / xAI)."""
+    api_base = str(config.get("tempik_api_base", "https://tempmail.hafizhmuzani.my.id") or "").strip().rstrip("/")
+    if not api_base:
+        raise Exception("Tempik API Base 未配置")
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        raise_if_cancelled(cancel_callback)
+        try:
+            resp = http_get(
+                f"{api_base}/api/inboxes/{email}/messages",
+                headers={"x-session-id": dev_token},
+            )
+            resp.raise_for_status()
+            messages = resp.json() or []
+        except Exception as exc:
+            if log_callback:
+                log_callback(f"[Debug] Tempik 拉取邮件列表失败: {exc}")
+            sleep_with_cancel(poll_interval, cancel_callback)
+            continue
+        if log_callback:
+            log_callback(f"[Debug] Tempik 本轮邮件数量: {len(messages)}")
+        for msg in messages:
+            subject = str(msg.get("subject", "") or "")
+            body = msg.get("body_text") or msg.get("body") or ""
+            if not body and msg.get("body_html"):
+                body = re.sub(r"<[^>]+>", " ", str(msg.get("body_html")))
+            combined = f"{subject}\n{body}"
+            if log_callback:
+                log_callback(f"[Debug] Tempik 收到邮件: {subject}")
+            code = extract_verification_code(combined, subject)
+            if code:
+                if log_callback:
+                    log_callback(f"[*] Tempik 从邮件中提取到验证码: {code}")
+                return code
+        sleep_with_cancel(poll_interval, cancel_callback)
+    raise Exception(f"Tempik 在 {timeout}s 内未收到验证码邮件")
+
+
 def get_email_and_token(api_key=None):
     provider = get_email_provider()
     if provider == "yyds":
         return yyds_get_email_and_token(api_key=api_key, jwt=get_yyds_jwt())
     if provider == "cloudmail":
         return cloudmail_get_email_and_token()
+    if provider == "tempik":
+        return tempik_get_email_and_token()
     if provider == "cloudflare":
         api_base = get_cloudflare_api_base()
         if not api_base:
@@ -663,6 +739,15 @@ def get_oai_code(
             log_callback=log_callback,
             cancel_callback=cancel_callback,
             resend_callback=resend_callback,
+        )
+    if provider == "tempik":
+        return tempik_get_oai_code(
+            dev_token,
+            email,
+            timeout=timeout,
+            poll_interval=poll_interval,
+            log_callback=log_callback,
+            cancel_callback=cancel_callback,
         )
     if provider == "cloudflare":
         return cloudflare_get_oai_code(

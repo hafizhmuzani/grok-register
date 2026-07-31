@@ -19,6 +19,8 @@ DEFAULT_CONFIG = {
     "cloudmail_public_token": "",
     "cloudmail_domains": "",
     "cloudmail_path_messages": "/api/public/emailList",
+    "tempik_api_base": "https://tempmail.hafizhmuzani.my.id",
+    "tempik_default_domain": "hafizhmuzani.my.id",
     "proxy": "",
     "enable_nsfw": True,
     "register_count": 1,
@@ -107,7 +109,7 @@ def validate_config_structure(raw):
     for key in string_keys:
         cfg[key] = _require_string(cfg, key, path=key in path_keys)
     enums = {
-        "email_provider": {"duckmail", "yyds", "cloudflare", "cloudmail"},
+        "email_provider": {"duckmail", "yyds", "cloudflare", "cloudmail", "tempik"},
         "cloudflare_auth_mode": {"query-key", "bearer", "x-api-key", "x-admin-auth", "none"},
         "grok2api_pool_name": {"ssoBasic", "ssoSuper"},
     }
@@ -129,7 +131,7 @@ def validate_config_structure(raw):
         cfg[key] = value
 
     url_keys = {
-        "cloudflare_api_base", "cloudmail_api_base",
+        "cloudflare_api_base", "cloudmail_api_base", "tempik_api_base",
         "grok2api_remote_base", "cpa_base_url",
     }
     for key in url_keys:
@@ -161,6 +163,8 @@ def validate_run_requirements(cfg):
             raise ConfigError("Cloud Mail 模式缺少必需配置: " + ", ".join(missing))
     if provider == "yyds" and not (cfg["yyds_api_key"] or cfg["yyds_jwt"]):
         raise ConfigError("YYDS 模式需要至少配置 yyds_api_key 或 yyds_jwt")
+    if provider == "tempik" and not cfg["tempik_api_base"]:
+        raise ConfigError("Tempik 模式需要配置 tempik_api_base")
     if cfg["grok2api_auto_add_remote"]:
         if not cfg["grok2api_remote_base"]:
             raise ConfigError("远端 token 入池缺少必需配置: grok2api_remote_base")
