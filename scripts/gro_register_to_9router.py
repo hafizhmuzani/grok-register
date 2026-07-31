@@ -51,11 +51,36 @@ CPA_AUTHS_DIR = os.path.join(GROK_REGISTER_DIR, "cpa_auths")
 VENV_PYTHON = os.path.join(GROK_REGISTER_DIR, ".venv", "Scripts", "python.exe")
 
 
+def update_config_count(count: int) -> str:
+    """Temporarily update register_count in config.json, return original value."""
+    config_path = os.path.join(GROK_REGISTER_DIR, "config.json")
+    with open(config_path, "r", encoding="utf-8") as f:
+        cfg = json.load(f)
+    original = cfg.get("register_count", 1)
+    cfg["register_count"] = count
+    with open(config_path, "w", encoding="utf-8") as f:
+        json.dump(cfg, f, indent=4, ensure_ascii=False)
+    return str(original)
+
+
+def restore_config_count(original_count: str):
+    """Restore register_count in config.json."""
+    config_path = os.path.join(GROK_REGISTER_DIR, "config.json")
+    with open(config_path, "r", encoding="utf-8") as f:
+        cfg = json.load(f)
+    cfg["register_count"] = int(original_count)
+    with open(config_path, "w", encoding="utf-8") as f:
+        json.dump(cfg, f, indent=4, ensure_ascii=False)
+
+
 def run_grok_register(count: int = 1) -> bool:
     """Run grok-register CLI to register `count` accounts."""
     print(f"\n{'='*60}")
     print(f"[1/3] Running grok-register ({count} account(s))...")
     print(f"{'='*60}\n")
+
+    # Set register_count in config.json before running
+    original_count = update_config_count(count)
 
     cmd = [VENV_PYTHON, GROK_REGISTER_SCRIPT, "cli"]
     env = {**os.environ, "PYTHONPATH": ""}
@@ -72,7 +97,10 @@ def run_grok_register(count: int = 1) -> bool:
         text=True,
     )
 
-    stdout, _ = proc.communicate(input="start\n", timeout=600)
+    stdout, _ = proc.communicate(input="start\n", timeout=3600)
+
+    # Restore original config
+    restore_config_count(original_count)
 
     for line in stdout.splitlines():
         print(f"  {line}")
