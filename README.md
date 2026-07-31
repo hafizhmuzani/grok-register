@@ -1,8 +1,8 @@
 <div align="center">
 
-[![Grok Register — GUI and CLI registration automation toolkit](assets/banner.png)](https://github.com/AaronL725/grok-register)
+[![Grok Register — Toolkit otomatisasi registrasi GUI dan CLI](assets/banner.png)](https://github.com/AaronL725/grok-register)
 
-Grok Register 是一个面向自动化流程研究、测试环境验证和个人学习的 Python 工具。项目提供 GUI / CLI、四种临时邮箱接入、Chromium 页面自动化、账号安全落盘、pending 恢复、grok2api token 入池，以及可选的 CPA xAI OIDC 凭证导出。
+Grok Register adalah tool Python yang dirancang untuk riset alur otomatisasi, verifikasi lingkungan pengujian, dan pembelajaran pribadi. Proyek ini menyediakan GUI / CLI, empat layanan email sementara, otomatisasi halaman Chromium, penyimpanan akun yang aman, pemulihan pending, pool token grok2api, serta ekspor kredensial CPA xAI OIDC yang opsional.
 
 <p>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a>
@@ -28,85 +28,85 @@ Grok Register 是一个面向自动化流程研究、测试环境验证和个人
 ---
 
 > [!IMPORTANT]
-> 本项目仅用于自动化流程研究、测试环境验证和个人学习。使用者应自行遵守目标网站服务条款、当地法律法规和第三方服务限制。请勿将本项目用于滥用、绕过平台限制或未经授权的商业用途。
+> Proyek ini hanya digunakan untuk riset alur otomatisasi, verifikasi lingkungan pengujian, dan pembelajaran pribadi. Pengguna harus mematuhi syarat layanan situs target, hukum setempat, dan batasan layanan pihak ketiga. Jangan gunakan proyek ini untuk penyalahgunaan, membatasi akses platform, atau penggunaan komersial tanpa izin.
 
-## 目录
+## Daftar Isi
 
-- [当前功能](#当前功能)
-- [运行流程](#运行流程)
-- [环境要求](#环境要求)
-- [安装](#安装)
-- [配置](#配置)
-- [运行方式](#运行方式)
-- [输出与 pending 恢复](#输出与-pending-恢复)
-- [稳定性与安全机制](#稳定性与安全机制)
-- [项目架构](#项目架构)
-- [常见问题](#常见问题)
-- [License](#license)
-- [Acknowledgments](#acknowledgments)
+- [Fitur Saat Ini](#fitur-saat-ini)
+- [Alur Kerja](#alur-kerja)
+- [Persyaratan Sistem](#persyaratan-sistem)
+- [Instalasi](#instalasi)
+- [Konfigurasi](#konfigurasi)
+- [Cara Menjalankan](#cara-menjalankan)
+- [Output & Pemulihan Pending](#output--pemulihan-pending)
+- [Stabilitas & Mekanisme Keamanan](#stabilitas--mekanisme-keamanan)
+- [Arsitektur Proyek](#arsitektur-proyek)
+- [FAQ](#faq)
+- [Lisensi](#lisensi)
+- [Penghargaan](#penghargaan)
 - [Star History](#star-history)
 
-## 当前功能
+## Fitur Saat Ini
 
-- 使用真实 Chromium / Chrome 页面完成注册、验证码、资料填写、Turnstile 与 SSO cookie 获取。
-- 支持四种邮箱服务：
+- Menggunakan halaman Chromium / Chrome asli untuk menyelesaikan registrasi, verifikasi captcha, pengisian data, dan perolehan cookie Turnstile & SSO.
+- Mendukung empat layanan email:
   - DuckMail
   - YYDS
-  - Cloudflare 临时邮箱
-  - Cloud Mail 无人收件模式
-- 成功账号实时写入 `accounts_*.txt`。
-- 主结果写入失败时自动写入 `*.pending.jsonl`，可稍后幂等恢复。
-- 支持将 SSO token 写入 grok2api 本地池和远端池。
-- 支持注册成功后可选导出 CLIProxyAPI 使用的 CPA xAI OIDC 凭证。
-- 支持注册后尝试开启 NSFW；失败不会影响账号保存。
-- 支持浏览器重启、卡住重试、邮箱更换、定期内存清理和安全取消。
-- GUI / CLI 均展示四项批次状态：
-  - 成功
-  - 失败
-  - 待恢复
-  - 后处理警告
+  - Cloudflare Email Sementara
+  - Cloud Mail Mode Kotak Masuk Umum
+- Akun yang berhasil langsung ditulis ke `accounts_*.txt`.
+- Jika penulisan file hasil utama gagal, secara otomatis ditulis ke `*.pending.jsonl` untuk dipulihkan nanti secara idempoten.
+- Mendukung penulisan token SSO ke pool lokal dan remote grok2api.
+- Mendukung ekspor kredensial CPA xAI OIDC untuk CLIProxyAPI setelah registrasi berhasil.
+- Mendukung percobaan mengaktifkan NSFW setelah registrasi; kegagalan tidak mempengaruhi penyimpanan akun.
+- Mendukung restart browser, percobaan ulang jika macet, pergantian email, pembersihan memori berkala, dan pembatalan aman.
+- GUI / CLI menampilkan empat status batch:
+  - Berhasil
+  - Gagal
+  - Menunggu Pemulihan
+  - Peringatan Pasca-Proses
 
-## 运行流程
+## Alur Kerja
 
-单个账号的主要流程如下：
+Alur utama untuk satu akun adalah sebagai berikut:
 
 ```text
-打开注册页
-  → 创建临时邮箱并提交
-  → 轮询并填写验证码
-  → 填写资料
-  → 等待 SSO cookie
-  → 可选开启 NSFW
-  → 保存账号
-  → 可选写入 grok2api
-  → 可选导出 CPA/OIDC
+Buka halaman registrasi
+  → Buat email sementara dan kirimkan
+  → Polling dan isi kode verifikasi
+  → Isi data profil
+  → Tunggu cookie SSO
+  → Opsional: aktifkan NSFW
+  → Simpan akun
+  → Opsional: masukkan ke grok2api
+  → Opsional: ekspor CPA/OIDC
 ```
 
-账号已经注册成功后，token 入池或 CPA 导出属于**附加后处理**。附加功能失败只会增加“后处理警告”，不会把已经保存的账号重新统计为注册失败。
+Setelah akun berhasil didaftarkan, pemasukan token atau ekspor CPA termasuk dalam **pasca-proses tambahan**. Kegagalan fitur tambahan hanya menambah "peringatan pasca-proses", tidak mengubah status akun yang sudah tersimpan menjadi registrasi gagal.
 
-## 环境要求
+## Persyaratan Sistem
 
 - Python **3.9+**
-- Google Chrome 或 Chromium
-- 可访问注册页面和所选邮箱 API 的网络环境
-- GUI 模式需要 Tkinter；没有 Tkinter 时可使用 CLI 模式
+- Google Chrome atau Chromium
+- Jaringan yang dapat mengakses halaman registrasi dan API email yang dipilih
+- Mode GUI memerlukan Tkinter; jika tidak tersedia, gunakan mode CLI
 
-## 安装
+## Instalasi
 
-克隆仓库：
+Clone repositori:
 
 ```bash
-git clone https://github.com/AaronL725/grok-register.git
+git clone https://github.com/hafizhmuzani/grok-register.git
 cd grok-register
 ```
 
-建议创建虚拟环境：
+Disarankan membuat virtual environment:
 
 ```bash
 python -m venv .venv
 ```
 
-激活虚拟环境：
+Aktifkan virtual environment:
 
 ```bash
 # Windows PowerShell
@@ -116,14 +116,14 @@ python -m venv .venv
 source .venv/bin/activate
 ```
 
-安装依赖：
+Instal dependensi:
 
 ```bash
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 ```
 
-复制配置文件：
+Salin file konfigurasi:
 
 ```bash
 # macOS / Linux
@@ -133,59 +133,59 @@ cp config.example.json config.json
 copy config.example.json config.json
 ```
 
-然后编辑 `config.json`。该文件包含 API Key、JWT、代理和远端服务密钥等。
+Lalu edit `config.json`. File ini berisi API Key, JWT, proxy, dan kunci layanan remote.
 
-## 配置
+## Konfigurasi
 
-配置校验分为两层：
+Validasi konfigurasi terbagi menjadi dua lapisan:
 
-1. **结构校验**：检查类型、枚举、URL 和数值范围。GUI 启动时只执行这一层，因此旧配置缺少当前服务所需字段时仍可打开界面修改。
-2. **运行校验**：点击“开始注册”或启动 CLI 任务时，检查当前启用功能所需的配置。
+1. **Validasi Struktur**: Memeriksa tipe, enum, URL, dan rentang numerik. Saat GUI dimulai, hanya lapisan ini yang dijalankan, sehingga konfigurasi lama yang kehilangan field layanan yang dibutuhkan masih dapat membuka antarmuka untuk diperbaiki.
+2. **Validasi Runtime**: Dijalankan saat mengklik "Mulai Registrasi" atau memulai tugas CLI, memeriksa konfigurasi yang diperlukan oleh fitur yang aktif.
 
-### 基础配置
+### Konfigurasi Dasar
 
-| 配置项 | 说明 |
+| Konfigurasi | Keterangan |
 | --- | --- |
-| `email_provider` | `duckmail`、`yyds`、`cloudflare` 或 `cloudmail` |
-| `register_count` | 本批次目标数量，允许范围由配置校验控制 |
-| `proxy` | 主注册流程代理，可留空 |
-| `enable_nsfw` | 注册后是否尝试开启 NSFW |
-| `user_agent` | 浏览器和请求使用的 User-Agent |
+| `email_provider` | `duckmail`, `yyds`, `cloudflare`, atau `cloudmail` |
+| `register_count` | Target jumlah batch ini, rentang diatur oleh validasi konfigurasi |
+| `proxy` | Proxy registrasi utama, boleh kosong |
+| `enable_nsfw` | Apakah mencoba mengaktifkan NSFW setelah registrasi |
+| `user_agent` | User-Agent yang digunakan browser dan request |
 
 ### DuckMail
 
-| 配置项 | 说明 |
+| Konfigurasi | Keterangan |
 | --- | --- |
-| `duckmail_api_key` | 可选 DuckMail API Key |
+| `duckmail_api_key` | API Key DuckMail (opsional) |
 
 ### YYDS
 
-| 配置项 | 说明 |
+| Konfigurasi | Keterangan |
 | --- | --- |
-| `yyds_api_key` | YYDS API Key |
-| `yyds_jwt` | YYDS JWT |
+| `yyds_api_key` | API Key YYDS |
+| `yyds_jwt` | JWT YYDS |
 
-选择 `yyds` 时，`yyds_api_key` 和 `yyds_jwt` 至少配置一个，否则运行校验会直接拒绝启动。
+Saat memilih `yyds`, `yyds_api_key` dan `yyds_jwt` minimal harus diisi satu, jika tidak validasi runtime akan langsung menolak.
 
-### Cloudflare 临时邮箱
+### Cloudflare Email Sementara
 
-| 配置项 | 说明 |
+| Konfigurasi | Keterangan |
 | --- | --- |
-| `cloudflare_api_base` | Cloudflare 临时邮箱 API 根地址 |
-| `cloudflare_api_key` | 匿名模式留空；admin 模式填写 `ADMIN_PASSWORD` |
-| `cloudflare_auth_mode` | `none`、`bearer`、`x-api-key`、`x-admin-auth` 或 `query-key` |
-| `cloudflare_path_domains` | 域名列表路径，默认 `/api/domains` |
-| `cloudflare_path_accounts` | 创建邮箱路径，默认 `/api/new_address` |
-| `cloudflare_path_token` | token 路径，默认 `/api/token` |
-| `cloudflare_path_messages` | 收件列表路径，默认 `/api/mails` |
-| `defaultDomains` | 默认收信域名；多个域名用英文逗号分隔并轮换使用 |
+| `cloudflare_api_base` | Alamat dasar API email sementara Cloudflare |
+| `cloudflare_api_key` | Kosongkan untuk mode anonim; isi `ADMIN_PASSWORD` untuk mode admin |
+| `cloudflare_auth_mode` | `none`, `bearer`, `x-api-key`, `x-admin-auth`, atau `query-key` |
+| `cloudflare_path_domains` | Path daftar domain, default `/api/domains` |
+| `cloudflare_path_accounts` | Path pembuatan email, default `/api/new_address` |
+| `cloudflare_path_token` | Path token, default `/api/token` |
+| `cloudflare_path_messages` | Path daftar pesan masuk, default `/api/mails` |
+| `defaultDomains` | Domain penerima default; beberapa domain dipisahkan koma dan digunakan bergantian |
 
-#### 匿名创建模式
+#### Mode Pembuatan Anonim
 
 ```json
 {
   "email_provider": "cloudflare",
-  "cloudflare_api_base": "https://你的-worker-api-域名",
+  "cloudflare_api_base": "https://domain-worker-api-anda",
   "cloudflare_api_key": "",
   "cloudflare_auth_mode": "none",
   "cloudflare_path_domains": "/api/domains",
@@ -196,15 +196,15 @@ copy config.example.json config.json
 }
 ```
 
-#### Admin 创建模式
+#### Mode Pembuatan Admin
 
-当匿名 `/api/new_address` 受 Turnstile 限制时，可使用：
+Ketika endpoint anonim `/api/new_address` terbatas oleh Turnstile, gunakan:
 
 ```json
 {
   "email_provider": "cloudflare",
-  "cloudflare_api_base": "https://你的-worker-api-域名",
-  "cloudflare_api_key": "你的 ADMIN_PASSWORD",
+  "cloudflare_api_base": "https://domain-worker-api-anda",
+  "cloudflare_api_key": "ADMIN_PASSWORD anda",
   "cloudflare_auth_mode": "x-admin-auth",
   "cloudflare_path_accounts": "/admin/new_address",
   "cloudflare_path_messages": "/api/mails",
@@ -212,89 +212,89 @@ copy config.example.json config.json
 }
 ```
 
-Admin 密码只用于创建邮箱。读取邮件仍使用创建接口返回的邮箱 JWT。
+Password Admin hanya digunakan untuk membuat email. Membaca pesan tetap menggunakan JWT email yang dikembalikan oleh endpoint pembuatan.
 
-可先使用调试脚本验证接口：
+Gunakan skrip debug untuk memverifikasi endpoint:
 
 ```bash
 python cf_mail_debug.py \
-  --api-base "https://你的-worker-api-域名" \
+  --api-base "https://domain-worker-api-anda" \
   --auth-mode x-admin-auth \
-  --api-key "你的 ADMIN_PASSWORD" \
+  --api-key "ADMIN_PASSWORD anda" \
   --create-path /admin/new_address \
   --domain "example.com"
 ```
 
-### Cloud Mail 无人收件模式
+### Cloud Mail Mode Kotak Masuk Umum
 
-| 配置项 | 说明 |
+| Konfigurasi | Keterangan |
 | --- | --- |
-| `cloudmail_api_base` | Cloud Mail 站点根地址 |
-| `cloudmail_public_token` | 公共收件 API Token |
-| `cloudmail_domains` | 无人收件域名，多个域名用英文逗号分隔 |
-| `cloudmail_path_messages` | 默认 `/api/public/emailList` |
+| `cloudmail_api_base` | Alamat dasar situs Cloud Mail |
+| `cloudmail_public_token` | Token API Kotak Masuk Umum |
+| `cloudmail_domains` | Domain kotak masuk umum, beberapa domain dipisahkan koma |
+| `cloudmail_path_messages` | Default `/api/public/emailList` |
 
-示例：
+Contoh:
 
 ```json
 {
   "email_provider": "cloudmail",
-  "cloudmail_api_base": "https://你的-Cloud-Mail-域名",
-  "cloudmail_public_token": "公共 API Token",
+  "cloudmail_api_base": "https://domain-Cloud-Mail-anda",
+  "cloudmail_public_token": "Token API Publik",
   "cloudmail_domains": "example.com,example.net",
   "cloudmail_path_messages": "/api/public/emailList"
 }
 ```
 
-Cloud Mail 模式直接生成随机地址，不预先创建邮箱账户。公共 Token 只从 `config.json` 读取，不会作为邮箱 credential 写入 `mail_credentials.txt`。
+Mode Cloud Mail langsung membuat alamat acak, tidak membuat akun email terlebih dahulu. Token Publik hanya dibaca dari `config.json`, tidak ditulis sebagai kredensial email ke `mail_credentials.txt`.
 
-### grok2api token 池
+### Pool Token grok2api
 
-| 配置项 | 说明 |
+| Konfigurasi | Keterangan |
 | --- | --- |
-| `grok2api_auto_add_local` | 是否写入本地 token 池 |
-| `grok2api_local_token_file` | 本地 `token.json` 路径；留空使用项目默认路径 |
-| `grok2api_pool_name` | `ssoBasic` 或 `ssoSuper` |
-| `grok2api_auto_add_remote` | 是否写入远端 token 池 |
-| `grok2api_remote_base` | 站点根地址、`/admin` 或 `/admin/api` 地址 |
-| `grok2api_remote_app_key` | 旧版远端管理 API 的 app key |
-| `grok2api_remote_admin_username` | 新版 `chenyme/grok2api` 管理员账号 |
-| `grok2api_remote_admin_password` | 新版 `chenyme/grok2api` 管理员密码 |
-| `grok2api_allow_legacy_full_save` | 是否允许旧版全量保存回退；默认关闭 |
+| `grok2api_auto_add_local` | Apakah menulis ke pool token lokal |
+| `grok2api_local_token_file` | Path `token.json` lokal; kosongkan untuk menggunakan path default proyek |
+| `grok2api_pool_name` | `ssoBasic` atau `ssoSuper` |
+| `grok2api_auto_add_remote` | Apakah menulis ke pool token remote |
+| `grok2api_remote_base` | Alamat dasar situs, `/admin`, atau `/admin/api` |
+| `grok2api_remote_app_key` | App key API manajemen remote versi lama |
+| `grok2api_remote_admin_username` | Username admin `chenyme/grok2api` versi baru |
+| `grok2api_remote_admin_password` | Password admin `chenyme/grok2api` versi baru |
+| `grok2api_allow_legacy_full_save` | Apakah mengizinkan fallback penyimpanan penuh versi lama; default mati |
 
-远端入池会根据凭据自动选择版本：填写 `app_key` 使用旧版 `/tokens/add`；填写管理员账号和密码则通过新版 `/api/admin/v1/accounts/web/import` 导入 Grok Web。两套凭据不能同时填写。新版管理请求默认直连，远程地址必须使用 HTTPS，本机地址可使用 HTTP。旧版全量保存默认关闭，以避免并发覆盖。
+Pemasukan remote otomatis memilih versi berdasarkan kredensial: mengisi `app_key` menggunakan `/tokens/add` versi lama; mengisi username dan password admin akan mengimpor ke Grok Web melalui `/api/admin/v1/accounts/web/import` versi baru. Dua set kredensial tidak bisa diisi bersamaan. Request manajemen versi baru default langsung terhubung, alamat remote wajib menggunakan HTTPS, alamat lokal bisa menggunakan HTTP. Penyimpanan penuh versi lama default dimatikan untuk menghindari overwrite konkuren.
 
 ```json
 {
   "grok2api_auto_add_remote": true,
-  "grok2api_remote_base": "https://你的-grok2api-域名",
+  "grok2api_remote_base": "https://domain-grok2api-anda",
   "grok2api_remote_app_key": "",
   "grok2api_remote_admin_username": "admin",
-  "grok2api_remote_admin_password": "你的管理员密码",
+  "grok2api_remote_admin_password": "password admin anda",
   "grok2api_pool_name": "ssoBasic",
   "grok2api_allow_legacy_full_save": false
 }
 ```
 
-### CPA / xAI OIDC 导出
+### CPA / Ekspor xAI OIDC
 
-| 配置项 | 说明 |
+| Konfigurasi | Keterangan |
 | --- | --- |
-| `cpa_export_enabled` | 是否在注册成功后导出 CPA xAI OIDC 凭证 |
-| `cpa_auth_dir` | 输出目录，默认 `./cpa_auths` |
-| `cpa_copy_to_hotload` | 是否复制到 CLIProxyAPI auth-dir |
-| `cpa_hotload_dir` | 热加载目录；仅导出开启且复制开启时必填 |
-| `cpa_base_url` | CPA 凭证中的 API Base URL |
-| `cpa_proxy` | CPA 专用代理；留空回退到主 `proxy` |
-| `cpa_headless` | CPA 浏览器是否无头；默认建议 `false` |
-| `cpa_force_standalone` | 是否使用独立 CPA 浏览器会话 |
-| `cpa_mint_timeout_sec` | 浏览器授权整体超时 |
-| `cpa_mint_cookie_inject` | 是否向 CPA 会话注入已取得的 cookie |
-| `cpa_oidc_request_timeout_sec` | Device Authorization 请求超时 |
-| `cpa_oidc_poll_timeout_sec` | 单次 token 轮询请求超时 |
-| `api_reverse_tools` | 可选外部 `cpa_xai` 包目录 |
+| `cpa_export_enabled` | Apakah mengekspor kredensial CPA xAI OIDC setelah registrasi berhasil |
+| `cpa_auth_dir` | Direktori output, default `./cpa_auths` |
+| `cpa_copy_to_hotload` | Apakah menyalin ke auth-dir CLIProxyAPI |
+| `cpa_hotload_dir` | Direktori hotload; wajib diisi hanya jika ekspor aktif dan salin aktif |
+| `cpa_base_url` | API Base URL dalam kredensial CPA |
+| `cpa_proxy` | Proxy khusus CPA; kosongkan untuk kembali ke `proxy` utama |
+| `cpa_headless` | Apakah browser CPA headless; default disarankan `false` |
+| `cpa_force_standalone` | Apakah menggunakan sesi browser CPA independen |
+| `cpa_mint_timeout_sec` | Timeout keseluruhan otorisasi browser |
+| `cpa_mint_cookie_inject` | Apakah menyuntikkan cookie yang sudah diperoleh ke sesi CPA |
+| `cpa_oidc_request_timeout_sec` | Timeout request Device Authorization |
+| `cpa_oidc_poll_timeout_sec` | Timeout request polling token sekali |
+| `api_reverse_tools` | Direktori paket `cpa_xai` eksternal (opsional) |
 
-最小配置：
+Konfigurasi minimal:
 
 ```json
 {
@@ -308,9 +308,9 @@ Cloud Mail 模式直接生成随机地址，不预先创建邮箱账户。公共
 }
 ```
 
-CPA 浏览器直接复用 `browser_runtime.py` 的 Chromium options 和 `cpa_xai/proxyutil.py` 的代理桥，不会反向导入主程序或创建第二份主模块全局状态。
+Browser CPA langsung menggunakan kembali opsi Chromium dari `browser_runtime.py` dan jembatan proxy dari `cpa_xai/proxyutil.py`, tidak mengimpor balik program utama atau membuat salinan kedua status global modul utama.
 
-## 运行方式
+## Cara Menjalankan
 
 ### GUI
 
@@ -318,13 +318,13 @@ CPA 浏览器直接复用 `browser_runtime.py` 的 Chromium options 和 `cpa_xai
 python grok_register_ttk.py
 ```
 
-GUI 启动时读取配置并执行结构校验。填写配置后点击“开始注册”，程序会执行完整运行校验，只保存一次配置，然后启动后台线程。
+Saat GUI dimulai, konfigurasi dibaca dan validasi struktur dijalankan. Setelah mengisi konfigurasi, klik "Mulai Registrasi" untuk menjalankan validasi runtime penuh, menyimpan konfigurasi sekali saja, lalu memulai thread latar belakang.
 
-每个新批次开始前，成功、失败、待恢复和后处理警告四项统计都会全部清零。
+Sebelum setiap batch baru dimulai, keempat statistik (berhasil, gagal, menunggu pemulihan, dan peringatan pasca-proses) akan di-reset ke nol.
 
 ### CLI
 
-以下命令等价：
+Perintah berikut memiliki efek yang sama:
 
 ```bash
 python grok_register_ttk.py cli
@@ -332,29 +332,29 @@ python grok_register_ttk.py start
 python grok_register_ttk.py --cli
 ```
 
-CLI 读取 `config.json` 中的 `register_count`，通过运行校验后提示：
+CLI membaca `register_count` dari `config.json`, setelah lolos validasi runtime akan menampilkan:
 
 ```text
 > start
 ```
 
-输入 `start` 才会开始。按 `Ctrl+C` 可请求停止并执行最终清理。
+Ketik `start` untuk memulai. Tekan `Ctrl+C` untuk meminta berhenti dan menjalankan pembersihan akhir.
 
-> CLI 只是不启动 Tk GUI，注册过程仍会打开 Chromium / Chrome。
+> CLI hanya tidak membuka Tk GUI, proses registrasi tetap membuka Chromium / Chrome.
 
-### 恢复 pending 结果
+### Memulihkan Hasil Pending
 
 ```bash
-python grok_register_ttk.py retry-pending <pending文件> [输出文件]
+python grok_register_ttk.py retry-pending <file_pending> [file_output]
 ```
 
-示例：
+Contoh:
 
 ```bash
 python grok_register_ttk.py retry-pending accounts_20260715_120000.txt.pending.jsonl
 ```
 
-指定其他输出文件：
+Menentukan file output lain:
 
 ```bash
 python grok_register_ttk.py retry-pending \
@@ -362,133 +362,133 @@ python grok_register_ttk.py retry-pending \
   recovered_accounts.txt
 ```
 
-程序会拒绝把 pending 输入文件本身作为输出文件。
+Program akan menolak menjadikan file input pending sebagai file output yang sama.
 
-## 输出与 pending 恢复
+## Output & Pemulihan Pending
 
-运行过程中可能生成：
+Selama proses berjalan, file-file berikut mungkin dihasilkan:
 
-| 文件 | 内容 |
+| File | Isi |
 | --- | --- |
-| `accounts_*.txt` | 已成功保存的账号、密码和 SSO token |
-| `mail_credentials.txt` | 临时邮箱地址与邮箱凭证 |
-| `*.pending.jsonl` | 已注册但主结果文件未成功写入的账号 |
-| `*.pending.jsonl.lock` | pending 恢复独占锁 |
-| 本地 `token.json` | 可选 grok2api 本地池 |
-| `cpa_auths/xai-*.json` | 可选 CPA xAI OIDC 凭证 |
-| `cpa_auths/cpa_auth_failed.txt` | CPA 导出失败记录 |
-| `screenshots/` | CPA 浏览器失败调试截图 |
+| `accounts_*.txt` | Akun, password, dan token SSO yang berhasil disimpan |
+| `mail_credentials.txt` | Alamat email sementara dan kredensial email |
+| `*.pending.jsonl` | Akun yang sudah didaftarkan tetapi file hasil utama gagal ditulis |
+| `*.pending.jsonl.lock` | Kunci eksklusif pemulihan pending |
+| `token.json` (lokal) | Pool grok2api lokal opsional |
+| `cpa_auths/xai-*.json` | Kredensial CPA xAI OIDC opsional |
+| `cpa_auths/cpa_auth_failed.txt` | Catatan kegagalan ekspor CPA |
+| `screenshots/` | Screenshot debug kegagalan browser CPA |
 
-pending 恢复具有以下保护：
+Pemulihan pending memiliki perlindungan berikut:
 
-- 使用 `filelock` 对同一 pending 文件加独占锁；
-- 读取、恢复、重写或删除 pending 文件均在锁内完成；
-- 主结果文件按 `email+sso` 去重；
-- 已存在的记录直接视为恢复成功；
-- pending 文件使用临时文件和原子替换更新；
-- 输入路径与输出路径相同会被拒绝。
+- Menggunakan `filelock` untuk mengunci eksklusif file pending yang sama;
+- Membaca, memulihkan, menulis ulang, atau menghapus file pending semuanya dilakukan dalam kunci;
+- File hasil utama melakukan deduplikasi berdasarkan `email+sso`;
+- Catatan yang sudah ada langsung dianggap berhasil dipulihkan;
+- File pending menggunakan file sementara dan penggantian atomik;
+- Path input dan output yang sama akan ditolak.
 
-因此进程在“账号已追加、pending 尚未更新”之间中断后，重复执行恢复不会重复写入同一个账号。
+Oleh karena itu, jika proses terputus di antara "akun sudah ditambahkan, pending belum diperbarui", menjalankan pemulihan ulang tidak akan menulis duplikat akun yang sama.
 
-## 稳定性与安全机制
+## Stabilitas & Mekanisme Keamanan
 
-### 批量流程
+### Alur Batch
 
-- 邮箱验证码失败时可更换邮箱重试。
-- 页面流程卡住时按当前账号槽位重试，达到上限后才计为失败。
-- 每个账号之间重启或重新创建浏览器。
-- 每成功 5 个账号默认执行一次运行时清理。
-- 定期清理失败只记录警告，不修改账号统计。
-- 用户在账号间取消时设置批次 `cancelled` 状态并正常结束。
-- 最终清理异常不会覆盖原始任务异常。
-- GUI observer 异常不会终止批量流程。
+- Ketika verifikasi email gagal, dapat diganti dengan email lain untuk dicoba ulang.
+- Ketika halaman macet, slot akun saat ini akan dicoba ulang hingga batas baru dihitung sebagai gagal.
+- Browser di-restart atau dibuat ulang di antara setiap akun.
+- Setiap 5 akun yang berhasil, pembersihan runtime dijalankan secara default.
+- Kegagalan pembersihan berkala hanya mencatat peringatan, tidak mengubah statistik akun.
+- Saat pembatalan oleh pengguna di antara akun, status batch `cancelled` diatur dan berakhir dengan normal.
+- Pembersihan akhir yang gagal tidak menimpa pengecualian tugas asli.
+- Pengecualian observer GUI tidak menghentikan alur batch.
 
-### 文件写入
+### Penulisan File
 
-- 配置、本地 token 池和 pending 更新采用临时文件加原子替换。
-- 本地 token 池使用文件锁，损坏 JSON 不会被静默覆盖。
-- 已存在 token 会被去重。
+- Konfigurasi, pool token lokal, dan pembaruan pending menggunakan file sementara dengan penggantian atomik.
+- Pool token lokal menggunakan filelock; JSON yang rusak tidak akan ditimpa secara diam-diam.
+- Token yang sudah ada akan dideduplikasi.
 
-### 后处理隔离
+### Isolasi Pasca-Proses
 
-- 主账号保存完成后，token 入池和 CPA 导出分别捕获异常。
-- 一个后处理步骤失败不会阻止另一个步骤执行。
-- 后处理失败不会把账号重新归类为注册失败。
+- Setelah penyimpanan akun utama selesai, pemasukan token dan ekspor CPA masing-masing menangkap pengecualian.
+- Kegagalan satu langkah pasca-proses tidak menghalangi langkah lainnya dijalankan.
+- Kegagalan pasca-proses tidak mengubah klasifikasi akun menjadi registrasi gagal.
 
-## 项目架构
+## Arsitektur Proyek
 
 ```text
 .
-├── grok_register_ttk.py       # GUI、CLI、参数入口和兼容适配层
-├── registration_flow.py       # GUI / CLI 唯一批量编排入口
-├── app_config.py              # 默认配置、加载保存、结构校验与运行校验
-├── account_outputs.py         # 账号输出、pending、token 池和原子写入
-├── mail_service.py            # DuckMail、YYDS、Cloudflare、Cloud Mail
-├── browser_runtime.py         # HTTP、代理和 Chromium options
-├── registration_browser.py    # 主注册浏览器生命周期与页面自动化
-├── cf_mail_debug.py           # Cloudflare 邮箱调试 CLI
-├── cpa_export.py              # CPA/OIDC 导出兼容入口
+├── grok_register_ttk.py       # GUI, CLI, entri parameter, dan lapisan kompatibilitas
+├── registration_flow.py       # Satu-satunya entri orkestrasi batch GUI / CLI
+├── app_config.py              # Konfigurasi default, muat simpan, validasi struktur & runtime
+├── account_outputs.py         # Output akun, pending, pool token, dan penulisan atomik
+├── mail_service.py            # DuckMail, YYDS, Cloudflare, Cloud Mail
+├── browser_runtime.py         # HTTP, proxy, dan opsi Chromium
+├── registration_browser.py    # Siklus hidup browser registrasi utama & otomatisasi halaman
+├── cf_mail_debug.py           # CLI debug email Cloudflare
+├── cpa_export.py              # Entri kompatibilitas ekspor CPA/OIDC
 ├── cpa_xai/
-│   ├── browser_session.py     # CPA 浏览器创建、复用、cookie 与清理
-│   ├── browser_confirm.py     # 登录、授权页面与 mint 编排
-│   ├── oauth_device.py        # Device Authorization 与 token 轮询
-│   ├── proxyutil.py           # 项目唯一认证代理桥实现
-│   ├── mint.py                # 凭证 mint 流程
-│   ├── schema.py              # CPA 输出结构
-│   └── writer.py              # 凭证文件写入
-├── config.example.json        # 完整配置示例
-├── requirements.txt           # Python 依赖
-├── tests/                     # 单元与兼容回归测试
-├── turnstilePatch/            # 浏览器扩展资源
-├── assets/                    # README 资源
+│   ├── browser_session.py     # Pembuatan, penggunaan ulang, cookie & pembersihan browser CPA
+│   ├── browser_confirm.py     # Login, halaman otorisasi, & orkestrasi mint
+│   ├── oauth_device.py        # Device Authorization & polling token
+│   ├── proxyutil.py           # Implementasi jembatan proxy terotentikasi satu-satunya proyek
+│   ├── mint.py                # Alur credential mint
+│   ├── schema.py              # Struktur output CPA
+│   └── writer.py              # Penulisan file kredensial
+├── config.example.json        # Contoh konfigurasi lengkap
+├── requirements.txt           # Dependensi Python
+├── tests/                     # Unit test dan regresi kompatibilitas
+├── turnstilePatch/            # Sumber daya ekstensi browser
+├── assets/                    # Aset README
 └── README.md
 ```
 
-## 常见问题
+## FAQ
 
-### CLI 为什么仍然打开浏览器？
+### Mengapa CLI tetap membuka browser?
 
-CLI 仅省略 Tk GUI。注册页交互、Turnstile、验证码提交和 SSO cookie 获取仍依赖真实 Chromium 环境。
+CLI hanya menghilangkan Tk GUI. Interaksi halaman registrasi, Turnstile, pengiriman captcha, dan perolehan cookie SSO tetap bergantung pada lingkungan Chromium asli.
 
-### GUI 无法启动怎么办？
+### Bagaimana jika GUI tidak bisa dimulai?
 
-确认当前 Python 包含 Tkinter。Linux 发行版可能需要单独安装系统包，例如 `python3-tk`。也可以改用：
+Pastikan Python saat ini memiliki Tkinter. Distribusi Linux mungkin perlu menginstal paket sistem secara terpisah, misalnya `python3-tk`. Bisa juga menggunakan:
 
 ```bash
 python grok_register_ttk.py cli
 ```
 
-### 为什么配置文件不完整时 GUI 仍能打开？
+### Mengapa GUI tetap bisa dibuka meski konfigurasi tidak lengkap?
 
-这是预期行为。GUI 启动只做结构校验，方便在界面中修正服务商配置；点击开始时才做运行校验。
+Ini adalah perilaku yang diharapkan. Saat GUI dimulai hanya menjalankan validasi struktur, memudahkan perbaikan konfigurasi layanan di antarmuka; validasi runtime baru dijalankan saat mengklik mulai.
 
-### 为什么账号成功数少于实际注册完成数？
+### Mengapa jumlah akun berhasil lebih sedikit dari jumlah registrasi yang selesai?
 
-“成功”表示账号注册完成且主结果文件已经保存。注册完成但主文件写入失败的账号会显示在“待恢复”，并写入 pending 文件。
+"Berhasil" berarti akun telah selesai didaftarkan dan file hasil utama sudah tersimpan. Akun yang selesai didaftarkan tetapi gagal menulis file utama akan ditampilkan di "Menunggu Pemulihan", dan ditulis ke file pending.
 
-### 什么是后处理警告？
+### Apa itu peringatan pasca-proses?
 
-账号已经保存，但 grok2api 入池或 CPA 导出至少一项失败。账号本身仍属于成功，不需要重新注册。
+Akun sudah tersimpan, tetapi setidaknya satu dari pemasukan grok2api atau ekspor CPA gagal. Akun itu sendiri tetap terhitung berhasil, tidak perlu didaftarkan ulang.
 
-### NSFW 开启失败会丢失账号吗？
+### Apakah kegagalan mengaktifkan NSFW menyebabkan akun hilang?
 
-不会。NSFW 是可选步骤，失败会记录警告并继续保存账号。
+Tidak. NSFW adalah langkah opsional, kegagalan akan dicatat sebagai peringatan dan akun tetap disimpan.
 
-### 远端 grok2api 为什么拒绝旧版全量写入？
+### Mengapa remote grok2api menolak penyimpanan penuh versi lama?
 
-全量读改写在多进程环境中可能覆盖其他实例刚写入的 token。项目默认只接受增量接口；显式允许旧版回退时仍要求 ETag 并使用条件写入。
+Penyimpanan penuh baca-tulis-ubah dalam lingkungan multi-proses berpotensi menimpa token yang baru saja ditulis oleh instance lain. Proyek ini secara default hanya menerima antarmuka inkremental; saat fallback lama secara eksplisit diizinkan, tetap memerlukan ETag dan menggunakan penulisan bersyarat.
 
-### CPA 热加载目录为什么没有配置也能启动？
+### Mengapa direktori hotload CPA bisa dimulai tanpa konfigurasi?
 
-只有同时启用 `cpa_export_enabled=true` 和 `cpa_copy_to_hotload=true` 时，`cpa_hotload_dir` 才是必填项。
+`cpa_hotload_dir` hanya wajib diisi ketika `cpa_export_enabled=true` dan `cpa_copy_to_hotload=true` keduanya aktif.
 
-## License
+## Lisensi
 
 [MIT](LICENSE).
 
-## Acknowledgments
+## Penghargaan
 
-Thanks to [linux.do](https://linux.do) — a vibrant tech community where this project is shared and discussed.
+Terima kasih kepada [linux.do](https://linux.do) — komunitas teknologi yang aktif tempat proyek ini dibagikan dan didiskusikan.
 
 ## Star History
 
