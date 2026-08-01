@@ -84,7 +84,82 @@ def restore_config_count(original_count: str):
         json.dump(cfg, f, indent=4, ensure_ascii=False)
 
 
+
+
+def _merge_tokens_into_main(sso_tokens: list[str], prefix: str = ""):
+    """Atomically merge new SSO tokens into main token.json."""
+    import filelock
+    lock_path = TOKEN_JSON + ".lock"
+    try:
+        with filelock.FileLock(lock_path, timeout=30):
+            main_data = {"ssoBasic": []}
+            if os.path.isfile(TOKEN_JSON):
+                try:
+                    with open(TOKEN_JSON, encoding="utf-8") as f:
+                        main_data = json.load(f)
+                except (json.JSONDecodeError, OSError):
+                    pass
+            existing = {e.get("token", "") for e in main_data.get("ssoBasic", [])}
+            added = 0
+            for tok in sso_tokens:
+                if tok and tok not in existing:
+                    main_data.setdefault("ssoBasic", []).append({"token": tok, "email": ""})
+                    existing.add(tok)
+                    added += 1
+            if added > 0:
+                fd, tmp = tempfile.mkstemp(dir=os.path.dirname(TOKEN_JSON), suffix=".tmp")
+                try:
+                    with os.fdopen(fd, "w", encoding="utf-8") as f:
+                        json.dump(main_data, f, ensure_ascii=False, indent=2)
+                    os.replace(tmp, TOKEN_JSON)
+                except OSError:
+                    try:
+                        os.unlink(tmp)
+                    except OSError:
+                        pass
+                log(f"{prefix} Merged {added} tokens into main token.json")
+    except Exception as e:
+        log(f"{prefix} [WARN] token merge failed: {e}")
+
 # ─── Worker Setup ────────────────────────────────────────────
+def _merge_tokens_into_main(tokens: list, prefix: str):
+    """Merge worker tokens into main token.json without overwriting other workers' tokens."""
+    import fcntl
+    main_token_file = os.path.join(GROK_REGISTER_DIR, "token.json")
+    if not os.path.isfile(main_token_file):
+        return
+
+    try:
+        # Windows-compatible file lock: use filelock if available, else simple try/except
+        lock_path = main_token_file + ".lock"
+        os.makedirs(os.path.dirname(lock_path), exist_ok=True)
+        with open(lock_path, "w") as lf:
+            try:
+                import msvcrt
+                msvcrt.locking(lf.fileno(), msvcrt.LK_NBLCK, 1)
+            except (ImportError, OSError):
+                pass  # Lock unavailable, proceed without
+
+        with open(main_token_file, "r", encoding="utf-8") as f:
+            main_data = json.load(f)
+
+        existing_tokens = {t.get("token", "") for t in main_data.get("ssoBasic", [])}
+        new_tokens = [t for t in tokens if t and t not in existing_tokens]
+
+        if new_tokens:
+            for t in new_tokens:
+                main_data.setdefault("ssoBasic", []).append({
+                    "token": t, "email": "", "created_at": ""
+                })
+            with open(main_token_file, "w", encoding="utf-8") as f:
+                json.dump(main_data, f, ensure_ascii=False, indent=2)
+            log(f"{prefix} Merged {len(new_tokens)} new tokens into main token.json")
+        else:
+            log(f"{prefix} No new tokens to merge")
+    except Exception as e:
+        log(f"{prefix} [WARN] Could not merge tokens into main: {e}")
+
+
 def create_worker_dir(worker_id: int, count: int) -> str:
     """Create a temp working directory for a worker with its own config/token/cpa."""
     workdir = os.path.join(tempfile.gettempdir(), f"grok_worker_{worker_id}")
@@ -164,6 +239,10 @@ def run_single_worker(worker_id: int, count: int, results: dict, lock: threading
                 sso_tokens = [entry.get("token", "") for entry in data.get("ssoBasic", []) if entry.get("token")]
             except (json.JSONDecodeError, OSError):
                 pass
+
+            # Also merge tokens into main token.json atomically
+            if sso_tokens:
+                _merge_tokens_into_main(sso_tokens, prefix)
 
         # Find CPA files
         cpa_dir = os.path.join(workdir, "cpa_auths")
