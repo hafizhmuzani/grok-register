@@ -93,7 +93,11 @@ def test_account_direct(access_token: str) -> dict:
         body = e.read().decode("utf-8", errors="replace")
         try:
             err_data = json.loads(body)
-            error_msg = err_data.get("error", {}).get("message", body[:200])
+            err_field = err_data.get("error", "")
+            if isinstance(err_field, dict):
+                error_msg = err_field.get("message", body[:200])
+            else:
+                error_msg = str(err_field) or body[:200]
         except json.JSONDecodeError:
             error_msg = body[:200]
 
@@ -104,6 +108,10 @@ def test_account_direct(access_token: str) -> dict:
             status = "no_credits"
         elif e.code == 401:
             status = "token_expired"
+        elif e.code == 429:
+            status = "rate_limited"
+        else:
+            status = "error"
 
         return {
             "status": status,
