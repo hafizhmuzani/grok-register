@@ -124,16 +124,14 @@ def create_worker_dir(worker_id: int, count: int) -> str:
             except (PermissionError, OSError):
                 log(f"[WARN] Could not link {fname}, skipping")
 
-    # Directory symlinks (cpa_xai, etc.) — skip if not accessible
-    for dirname in ["cpa_xai"]:
-        src = os.path.join(GROK_REGISTER_DIR, dirname)
-        dst = os.path.join(workdir, dirname)
-        if not os.path.isdir(src) or os.path.exists(dst):
-            continue
+    # Directory symlinks (cpa_xai) — required Python package for grok-register
+    src_cpa = os.path.join(GROK_REGISTER_DIR, "cpa_xai")
+    dst_cpa = os.path.join(workdir, "cpa_xai")
+    if os.path.isdir(src_cpa) and not os.path.exists(dst_cpa):
         try:
-            os.symlink(src, dst)
-        except OSError:
-            pass  # Skip if symlink not supported
+            shutil.copytree(src_cpa, dst_cpa, ignore=shutil.ignore_patterns("__pycache__"))
+        except (PermissionError, OSError) as e:
+            log(f"[WARN] Could not copy cpa_xai: {e}")
 
     return workdir
 
